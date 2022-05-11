@@ -20,7 +20,17 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
-    console.log("DB connected");
+    const serviceCollection = client
+      .db("doctors-portal")
+      .collection("services");
+
+    app.get("/service", async (req, res) => {
+      const query = {};
+      const cursor = serviceCollection.find(query);
+      const services = await cursor.toArray();
+      console.log(services);
+      res.send(services);
+    });
   } finally {
     // await client.close();
   }
