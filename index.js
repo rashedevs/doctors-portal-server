@@ -26,12 +26,25 @@ async function run() {
     const bookingCollection = client
       .db("doctors-portal")
       .collection("bookings");
+    const userCollection = client.db("doctors-portal").collection("users");
 
     app.get("/service", async (req, res) => {
       const query = {};
       const cursor = serviceCollection.find(query);
       const services = await cursor.toArray();
       res.send(services);
+    });
+
+    app.put("/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: user,
+      };
+      const result = await userCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
     });
 
     //not the proper way, we will use aggregate lookup, pipeline, match, group
