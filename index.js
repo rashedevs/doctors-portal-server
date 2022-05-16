@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const app = express();
@@ -16,6 +17,12 @@ const client = new MongoClient(uri, {
   useUnifiedTopology: true,
   serverApi: ServerApiVersion.v1,
 });
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send({ message: "UnAuthorized Access" });
+  }
+}
 
 async function run() {
   try {
@@ -44,7 +51,12 @@ async function run() {
         $set: user,
       };
       const result = await userCollection.updateOne(filter, updateDoc, options);
-      res.send(result);
+      const token = jwt.sign(
+        { email: email },
+        process.env.ACCESS_TOKEN_SECRET,
+        { expiresIn: "1d" }
+      );
+      res.send({ result, token });
     });
 
     //not the proper way, we will use aggregate lookup, pipeline, match, group
@@ -74,9 +86,10 @@ async function run() {
       res.send(services);
     });
 
-    app.get("/booking", async (req, res) => {
-      const patient = await req?.query?.patient;
-      console.log(patient);
+    app.get("/booking", verifyJWT, async (req, res) => {
+      const patient = req?.query?.patient;
+      // const authorization = req.headers.authorization;
+      console.log(authorization);
       const query = { patient: patient };
       const bookings = await bookingCollection.find(query).toArray();
       res.send(bookings);
